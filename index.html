@@ -672,16 +672,22 @@
         openExternalBtn.href = "https://nishanth702.github.io/TrigPlotter-AWS/";
         openExternalBtn.style.display = 'inline-flex';
         
-        // Show loading spinner first
         modalContent.innerHTML = `
-          <div class="modal-loading-indicator" id="modalLoader" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--text-secondary); font-family: var(--font-sans); gap: 15px; margin: auto;">
+          <div class="modal-loading-indicator" id="modalLoader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font-sans); gap: 15px; z-index: 10;">
             <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent);"></i>
             <span>Loading live interactive preview...</span>
           </div>
-          <div class="modal-iframe-wrapper desktop" id="iframeWrapper" style="display: none; width: 100%; height: 100%;">
-            <iframe src="https://nishanth702.github.io/TrigPlotter-AWS/" title="TrigPlotter Live Frame" onload="document.getElementById('modalLoader').style.display='none'; document.getElementById('iframeWrapper').style.display='block';"></iframe>
+          <div class="modal-iframe-wrapper desktop" id="iframeWrapper">
+            <iframe id="sandboxIframe" src="https://nishanth702.github.io/TrigPlotter-AWS/" title="TrigPlotter Live Frame"></iframe>
           </div>
         `;
+        
+        // Hide loader when iframe finishes loading
+        const iframe = document.getElementById('sandboxIframe');
+        iframe.addEventListener('load', () => {
+          const loader = document.getElementById('modalLoader');
+          if (loader) loader.style.display = 'none';
+        });
       } else {
         // File explorer sandbox
         modalContent.classList.add('dark-bg');
