@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Student Feedback Auditor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #0E1117;
+  --surface: #1A1D24;
+  --sidebar: #111318;
+  --ink: #E0E2E7;
+  --dim: #8A94A6;
+  --border: #2D3139;
+  --green: #1F8547;
+  --green-bg: rgba(31, 133, 71, 0.2);
+  --green-border: #22C55E;
+  --red: #C93B2B;
+  --red-bg: rgba(201, 59, 43, 0.2);
+  --red-border: #EF4444;
+  --blue: #1A6CC4;
+  --blue-bg: rgba(26, 108, 196, 0.2);
+  --blue-border: #3B82F6;
+  --orange: #D47A22;
+  --orange-bg: rgba(212, 122, 34, 0.2);
+  --orange-border: #F97316;
+  --radius: 8px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex; min-height: 100vh;
+}
+
+/* Sidebar styling */
+.sidebar {
+  width: 280px; background: var(--sidebar); border-right: 1px solid var(--border);
+  padding: 24px; display: flex; flex-direction: column; gap: 20px;
+}
+.sidebar-title { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); }
+.sidebar-box { display: flex; flex-direction: column; gap: 6px; }
+.sidebar-box label { font-size: 12px; color: var(--ink); font-weight: 500; }
+.sidebar-box input, .sidebar-box select {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--ink); padding: 8px 10px; font-size: 13.5px; outline: none;
+}
+.sidebar-box input:focus { border-color: var(--blue-border); }
+.sidebar-warning { background: #3B2A15; border: 1px solid #784E1A; border-radius: 6px; padding: 10px; font-size: 11.5px; color: #F97316; }
+.btn {
+  display: inline-block; padding: 8px 12px; font-size: 13px; font-weight: 600;
+  border-radius: 6px; border: 1px solid var(--border); cursor: pointer; text-align: center;
+  background: var(--surface); color: var(--ink); text-decoration: none;
+}
+.btn:hover { background: var(--border); }
+.btn-primary { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-primary:hover { background: #166534; }
+.btn-blue { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn-blue:hover { background: #1D4ED8; }
+
+/* Main layout */
+.main-content { flex-grow: 1; padding: 32px 40px; overflow-y: auto; max-width: 1200px; }
+.title-area h1 { margin: 0 0 6px; font-size: 28px; font-weight: 700; color: #fff; }
+.title-area p { margin: 0 0 24px; color: var(--dim); font-size: 14.5px; }
+
+/* Tabs container */
+.tabs-header { display: flex; gap: 16px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab-btn {
+  background: none; border: none; color: var(--dim); padding: 10px 16px;
+  font-size: 14.5px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;
+  outline: none;
+}
+.tab-btn.active { color: var(--green-border); border-bottom-color: var(--green-border); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* Upload Area */
+.upload-card {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 30px; text-align: center; background: var(--surface);
+  cursor: pointer; position: relative; margin-bottom: 20px;
+}
+.upload-card:hover { border-color: var(--blue-border); }
+.upload-card input[type="file"] {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+}
+
+/* KPI Metrics */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+.kpi-card { background: var(--surface); padding: 18px 20px; border-radius: var(--radius); border: 1px solid var(--border); }
+.kpi-label { font-size: 12.5px; color: var(--dim); margin-bottom: 4px; }
+.kpi-val { font-size: 24px; font-weight: 700; color: #fff; }
+
+/* Charts container */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 28px 0; }
+.chart-box { background: var(--surface); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); min-height: 280px; }
+.chart-box h4 { margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; color: var(--dim); letter-spacing: 0.04em; }
+
+/* Filters & Database */
+.table-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 24px; }
+.table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+.table-filters { display: flex; gap: 10px; }
+.table-filters select {
+  background: var(--bg); border: 1px solid var(--border); color: var(--ink);
+  padding: 6px 10px; border-radius: 6px; font-size: 12.5px;
+}
+.audit-table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px; }
+th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+th { background: rgba(255,255,255,0.02); font-weight: 600; color: var(--dim); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-success { background: var(--green-bg); color: var(--green-border); border: 1px solid rgba(34,197,94,0.3); }
+.badge-error { background: var(--red-bg); color: var(--red-border); border: 1px solid rgba(239,68,68,0.3); }
+.badge-warn { background: var(--orange-bg); color: var(--orange-border); border: 1px solid rgba(249,115,22,0.3); }
+.badge-blue { background: var(--blue-bg); color: var(--blue-border); border: 1px solid rgba(59,130,246,0.3); }
+
+/* Sandbox Panel */
+.sandbox-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+.sandbox-card textarea {
+  width: 100%; height: 100px; background: var(--bg); border: 1px solid var(--border);
+  color: var(--ink); padding: 12px; border-radius: 6px; resize: none; outline: none; font-size: 14.5px;
+  margin-bottom: 16px;
+}
+.sandbox-card textarea:focus { border-color: var(--blue-border); }
+.sandbox-results { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+/* Progress Bar */
+.progress-container { background: var(--surface); border: 1px solid var(--border); padding: 16px 20px; border-radius: var(--radius); margin-top: 10px; display: none; }
+.progress-bar-bg { background: var(--bg); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.progress-bar-fill { background: var(--green-border); width: 0%; height: 100%; transition: width 0.1s; }
+
+@media (max-width: 820px) {
+  body { flex-direction: column; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 20px; }
+}
+</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-title">🎓 Project Settings</div>
+    
+    <div class="sidebar-box">
+      <label>Gemini API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="Enter API Key...">
+      <a href="https://aistudio.google.com/" target="_blank" style="font-size:11.5px; color:var(--blue-border); text-decoration:none;">Get Free Key ↗</a>
+    </div>
+
+    <div class="sidebar-box">
+      <label>Execution Mode</label>
+      <select id="modeSelect">
+        <option value="Local Offline">Local Offline Mode</option>
+        <option value="Cloud API">Cloud API Mode</option>
+      </select>
+    </div>
+
+    <div id="apiWarning" class="sidebar-warning">
+      API key missing. Defaulting to local offline rule heuristics.
+    </div>
+
+    <hr style="border:0; border-top:1px solid var(--border); width:100%;">
+
+    <div class="sidebar-title">📥 Test Tools</div>
+    <button onclick="downloadSample()" class="btn btn-blue">Download Sample CSV</button>
+  </aside>
+
+  <main class="main-content">
+    <div class="title-area">
+      <h1>Student Feedback Auditor</h1>
+      <p>Analyze unstructured course comments, classify issues, map sentiments, evaluate urgency, and generate resolutions instantly.</p>
+    </div>
+
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="switchTab(0)">📊 Batch CSV Audit</button>
+      <button class="tab-btn" onclick="switchTab(1)">🧪 Single Sandbox</button>
+    </div>
+
+    <!-- Tab 1: CSV Audit -->
+    <div class="tab-pane active" id="tab0">
+      <div class="upload-card">
+        <p style="margin:0 0 6px; font-size:16px; font-weight:600;">Drag and drop student feedback CSV here</p>
+        <p style="margin:0; font-size:12.5px; color:var(--dim);">Must contain a column labeled 'feedback'</p>
+        <input type="file" id="fileInput" accept=".csv">
+      </div>
+
+      <div id="filePreview" style="display:none; margin-bottom: 20px;">
+        <span style="font-size:13.5px; color:var(--dim);" id="fileStats"></span>
+        <button onclick="runBatchAudit()" class="btn btn-primary" style="margin-left: 12px;">Run AI Feedback Audit</button>
+      </div>
+
+      <div class="progress-container" id="progressBar">
+        <div style="font-size:13px; font-weight:600; display:flex; justify-content:space-between;">
+          <span>Auditing feedbacks...</span>
+          <span id="progressText">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+
+      <!-- Dashboard Results -->
+      <div id="auditDashboard" style="display:none;">
+        <div class="metrics-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Feedbacks</div>
+            <div class="kpi-val" id="mTotal">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Negative Sentiment %</div>
+            <div class="kpi-val" id="mNeg">0%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Urgent Action Alerts</div>
+            <div class="kpi-val" style="color:var(--red-border);" id="mUrgent">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Top Department</div>
+            <div class="kpi-val" style="color:var(--orange-border);" id="mTop">N/A</div>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-box">
+            <h4>Category Breakdown</h4>
+            <div style="height: 220px; position:relative;"><canvas id="categoryChart"></canvas></div>
+          </div>
+          <div class="chart-box">
+            <h4>Sentiment Split</h4>
+            <div style="height: 220px; position:relative;"><canvas id="sentimentChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="table-section">
+          <div class="table-header">
+            <h3 style="margin:0; font-size:16px;">Audited Feedback Database</h3>
+            <div class="table-filters">
+              <select id="filterCategory" onchange="applyFilters()">
+                <option value="">All Categories</option>
+                <option value="Academics">Academics</option>
+                <option value="Facilities">Facilities</option>
+                <option value="Placements">Placements</option>
+                <option value="Campus Life">Campus Life</option>
+                <option value="Administration">Administration</option>
+                <option value="Other">Other</option>
+              </select>
+              <select id="filterSentiment" onchange="applyFilters()">
+                <option value="">All Sentiments</option>
+                <option value="Positive">Positive</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Negative">Negative</option>
+              </select>
+              <select id="filterUrgency" onchange="applyFilters()">
+                <option value="">All Urgencies</option>
+                <option value="Normal">Normal</option>
+                <option value="Urgent">Urgent</option>
+              </select>
+              <button onclick="exportCSV()" class="btn btn-blue" style="font-size:12px; padding:4px 10px;">📥 Export Results</button>
+            </div>
+          </div>
+          <div class="audit-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feedback Text</th>
+                  <th>Category</th>
+                  <th>Sentiment</th>
+                  <th>Urgency</th>
+                  <th>Recommended Action Item</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Sandbox -->
+    <div class="tab-pane" id="tab1">
+      <div class="sandbox-card">
+        <h3>Try Single Feedback Input</h3>
+        <textarea id="sandboxInput" placeholder="e.g. Hostel mess serving stale food. Two students had food poisoning yesterday!"></textarea>
+        <button onclick="runSandboxAudit()" class="btn btn-primary">Analyze Feedback</button>
+
+        <div class="sandbox-results" id="sandboxResults" style="display:none;">
+          <h3 style="margin:0 0 16px 0;">🎯 Classification Results</h3>
+          <div class="metrics-grid">
+            <div class="kpi-card" style="border-left: 4px solid var(--blue-border);">
+              <div class="kpi-label">Category</div>
+              <div class="kpi-val" style="font-size: 20px;" id="sCategory">-</div>
+            </div>
+            <div class="kpi-card" id="sSentimentCard">
+              <div class="kpi-label">Sentiment</div>
+              <div class="kpi-val" style="font-size: 20px;" id="sSentiment">-</div>
+            </div>
+            <div class="kpi-card" id="sUrgencyCard">
+              <div class="kpi-label">Urgency</div>
+              <div class="kpi-val" style="font-size: 20px;" id="sUrgency">-</div>
+            </div>
+          </div>
+
+          <div style="background:var(--green-bg); border:1px solid rgba(34,197,94,0.3); border-radius:var(--radius); padding:16px 20px; margin-top:20px;">
+            <div style="font-size:12.5px; color:var(--dim); font-weight:600; margin-bottom:4px;">🛠️ AI-GENERATED ACTION ITEM</div>
+            <div style="font-size:15px; font-weight:700; color:var(--green-border);" id="sActionItem">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // -------------------------------------------------------------
+    // Global State & Core Logic
+    // -------------------------------------------------------------
+    let loadedData = [];
+    let auditedResults = [];
+    let categoryChartInstance = null;
+    let sentimentChartInstance = null;
+
+    const sampleFeedbacks = [
+      "The library Wi-Fi has not been working for the past three days. Please fix it.",
+      "Professor Sharma explains machine learning concepts extremely well. Loved the lecture!",
+      "Hostel mess serving stale food. Two students had food poisoning yesterday!",
+      "Placements office is not communicating the schedule for upcoming interviews.",
+      "The college sports ground is flooded with rainwater and is unusable.",
+      "Someone stole my laptop from the lab. There are no CCTV cameras in the hallway.",
+      "The registration fees counter is very slow. We have to stand in line for 2 hours.",
+      "The hostel rooms have a lot of water leakage during rains. It is very unhygienic.",
+      "Loved the cultural fest last night! Great management by the student committee.",
+      "Semester exams are scheduled with zero gap between papers. Very stressful."
+    ];
+
+    // API Key / Select watcher
+    const apiKeyInput = document.getElementById("apiKeyInput");
+    const modeSelect = document.getElementById("modeSelect");
+    const apiWarning = document.getElementById("apiWarning");
+
+    function updateApiStatus() {
+      const key = apiKeyInput.value.trim();
+      if (key) {
+        apiWarning.style.display = "none";
+        modeSelect.disabled = false;
+      } else {
+        apiWarning.style.display = "block";
+        modeSelect.value = "Local Offline";
+        modeSelect.disabled = true;
+      }
+    }
+    apiKeyInput.addEventListener("input", updateApiStatus);
+    updateApiStatus();
+
+    // Tab Switching
+    function switchTab(idx) {
+      document.querySelectorAll(".tab-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === idx);
+      });
+      document.querySelectorAll(".tab-pane").forEach((pane, i) => {
+        pane.classList.toggle("active", i === idx);
+      });
+    }
+
+    // CSV Download tool
+    function downloadSample() {
+      const csvContent = "data:text/csv;charset=utf-8,feedback\n" + sampleFeedbacks.map(f => `"${f.replace(/"/g, '""')}"`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "sample_student_feedback.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // CSV File Reader
+    document.getElementById("fileInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        parseCSV(text);
+      };
+      reader.readAsText(file);
+    });
+
+    function parseCSV(text) {
+      const lines = text.split(/\r?\n/);
+      if (lines.length === 0) return;
+
+      const headers = lines[0].split(",");
+      const fIdx = headers.findIndex(h => h.trim().toLowerCase().replace(/"/g, '') === "feedback");
+      if (fIdx === -1) {
+        alert("Error: CSV must contain a column named 'feedback'!");
+        return;
+      }
+
+      loadedData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Simple regex parser to handle quotes
+        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [line];
+        let feedbackVal = line;
+        if (matches[fIdx]) {
+          feedbackVal = matches[fIdx].replace(/^"|"$/g, '').replace(/""/g, '"');
+        }
+        loadedData.push(feedbackVal);
+      }
+
+      document.getElementById("fileStats").textContent = `Loaded ${loadedData.length} rows successfully.`;
+      document.getElementById("filePreview").style.display = "block";
+    }
+
+    // -------------------------------------------------------------
+    // Core NLP Classification Engine (Client-side translation)
+    // -------------------------------------------------------------
+    function runLocalAudit(text) {
+      const t = text.toLowerCase();
+      
+      // Sentiment Heuristics
+      const posWords = ["good", "excellent", "great", "love", "like", "best", "helpful", "clean", "impressed", "wonderful"];
+      const negWords = ["bad", "worst", "unhygienic", "leak", "leakage", "slow", "broken", "dirty", "unusable", "poor", "stolen", "poison", "fail", "stressful", "noise", "noisy"];
+      
+      let posHits = 0;
+      let negHits = 0;
+      posWords.forEach(w => { if (t.includes(w)) posHits++; });
+      negWords.forEach(w => { if (t.includes(w)) negHits++; });
+      
+      let sentiment = "Neutral";
+      if (posHits > negHits) sentiment = "Positive";
+      else if (negHits > posHits) sentiment = "Negative";
+
+      // Category Heuristics
+      const categories = {
+        Academics: ["exam", "teacher", "syllabus", "professor", "class", "lecture", "study", "course"],
+        Facilities: ["hostel", "mess", "food", "library", "wifi", "toilet", "water", "building", "cctv", "leak", "clean", "auditorium"],
+        Placements: ["placement", "job", "interview", "company", "career", "package", "salary"],
+        "Campus Life": ["fest", "sports", "ground", "club", "cultural", "event", "canteen", "friend"],
+        Administration: ["fee", "office", "counter", "register", "warden", "admin", "line", "communication"]
+      };
+
+      let category = "Other";
+      let maxHits = 0;
+      Object.entries(categories).forEach(([cat, words]) => {
+        let hits = 0;
+        words.forEach(w => { if (t.includes(w)) hits++; });
+        if (hits > maxHits) {
+          maxHits = hits;
+          category = cat;
+        }
+      });
+
+      // Urgency Heuristics
+      const urgentWords = ["poison", "stolen", "theft", "ragging", "fight", "safety", "emergency", "sick", "wire", "leak", "unhygienic"];
+      let urgency = "Normal";
+      urgentWords.forEach(w => { if (t.includes(w)) urgency = "Urgent"; });
+
+      // Action items
+      let action = "Review detailed feedback in student database and allocate support resources.";
+      if (category === "Academics") action = "Schedule faculty performance review and coordinate course curriculum gap audits.";
+      else if (category === "Facilities") action = "Dispatch maintenance crew to inspect plumbing, food hygiene, or network router integrity.";
+      else if (category === "Placements") action = "Instruct Placement Coordinator to publish recruitment schedules and mock interview slots.";
+      else if (category === "Campus Life") action = "Review event logistics and request maintenance department to clear flooded sports ground.";
+      else if (category === "Administration") action = "Audit office queues and configure online payment options to reduce lobby congestion.";
+
+      return { category, sentiment, urgency, action_item: action };
+    }
+
+    // Call Gemini API via Client-Side Fetch (Proxy fallback)
+    async function runGeminiAudit(text, key) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `You are an expert academic feedback auditor. Analyze the following student feedback and return a JSON object with these EXACT keys: 'category' (must be one of: Academics, Facilities, Placements, Campus Life, Administration, Other), 'sentiment' (must be one of: Positive, Negative, Neutral), 'urgency' (must be one of: Urgent, Normal - mark as Urgent if there are safety, security, mental health, bullying, theft, food poisoning, or extreme facility issues), and 'action_item' (a brief 1-sentence action item to resolve the issue).\n\nStudent Feedback: \"${text}\"\n\nReturn ONLY the raw JSON block without markdown formatting.`
+              }]
+            }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        const data = await response.json();
+        const resText = data.candidates[0].content.parts[0].text;
+        const resObj = JSON.parse(resText.trim());
+
+        return {
+          category: resObj.category || "Other",
+          sentiment: resObj.sentiment || "Neutral",
+          urgency: resObj.urgency || "Normal",
+          action_item: resObj.action_item || "Investigate complaint details."
+        };
+      } catch (err) {
+        console.error("Gemini API call failed, falling back to local:", err);
+        return runLocalAudit(text);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Action Controllers
+    // -------------------------------------------------------------
+    async function auditRecord(text) {
+      const mode = modeSelect.value;
+      const key = apiKeyInput.value.trim();
+      if (mode === "Cloud API" && key) {
+        return await runGeminiAudit(text, key);
+      }
+      return runLocalAudit(text);
+    }
+
+    async function runBatchAudit() {
+      const pBar = document.getElementById("progressBar");
+      const pFill = document.getElementById("progressBarFill");
+      const pText = document.getElementById("progressText");
+      
+      pBar.style.display = "block";
+      document.getElementById("auditDashboard").style.display = "none";
+      
+      auditedResults = [];
+      const total = loadedData.length;
+
+      for (let i = 0; i < total; i++) {
+        const res = await auditRecord(loadedData[i]);
+        auditedResults.push({
+          feedback: loadedData[i],
+          ...res
+        });
+        
+        const pct = Math.round(((i + 1) / total) * 100);
+        pFill.style.width = `${pct}%`;
+        pText.textContent = `${pct}%`;
+      }
+
+      pBar.style.display = "none";
+      document.getElementById("auditDashboard").style.display = "block";
+      renderDashboard();
+    }
+
+    async function runSandboxAudit() {
+      const val = document.getElementById("sandboxInput").value.trim();
+      if (!val) {
+        alert("Please enter feedback to analyze.");
+        return;
+      }
+
+      const resDiv = document.getElementById("sandboxResults");
+      resDiv.style.display = "none";
+
+      const res = await auditRecord(val);
+
+      document.getElementById("sCategory").textContent = res.category;
+      document.getElementById("sSentiment").textContent = res.sentiment;
+      document.getElementById("sUrgency").textContent = res.urgency === "Urgent" ? "Urgent 🚨" : "Normal";
+      document.getElementById("sActionItem").textContent = res.action_item;
+
+      // Color sentiment card
+      const sCard = document.getElementById("sSentimentCard");
+      sCard.style.borderLeft = "4px solid " + 
+        (res.sentiment === "Positive" ? "var(--green-border)" : 
+         res.sentiment === "Negative" ? "var(--red-border)" : "var(--orange-border)");
+
+      // Color urgency card
+      const uCard = document.getElementById("sUrgencyCard");
+      uCard.style.borderLeft = "4px solid " + 
+        (res.urgency === "Urgent" ? "var(--red-border)" : "var(--green-border)");
+
+      resDiv.style.display = "block";
+    }
+
+    // -------------------------------------------------------------
+    // Dashboard Rendering & Visuals
+    // -------------------------------------------------------------
+    function renderDashboard() {
+      // 1. Calculate KPI Metrics
+      const total = auditedResults.length;
+      document.getElementById("mTotal").textContent = total;
+
+      const negCount = auditedResults.filter(r => r.sentiment === "Negative").length;
+      document.getElementById("mNeg").textContent = total ? `${Math.round((negCount / total) * 100)}%` : "0%";
+
+      const urgentCount = auditedResults.filter(r => r.urgency === "Urgent").length;
+      document.getElementById("mUrgent").textContent = urgentCount;
+
+      // Top category calculations
+      const catMap = {};
+      auditedResults.forEach(r => { catMap[r.category] = (catMap[r.category] || 0) + 1; });
+      let topCat = "N/A";
+      let topVal = 0;
+      Object.entries(catMap).forEach(([cat, val]) => {
+        if (val > topVal) {
+          topVal = val;
+          topCat = cat;
+        }
+      });
+      document.getElementById("mTop").textContent = topCat;
+
+      // 2. Build Charts
+      buildCharts();
+
+      // 3. Render Database Table
+      applyFilters();
+    }
+
+    function buildCharts() {
+      // Category dataset count
+      const categories = ["Academics", "Facilities", "Placements", "Campus Life", "Administration", "Other"];
+      const catCounts = categories.map(cat => auditedResults.filter(r => r.category === cat).length);
+
+      if (categoryChartInstance) categoryChartInstance.destroy();
+      const ctxCat = document.getElementById("categoryChart").getContext("2d");
+      categoryChartInstance = new Chart(ctxCat, {
+        type: 'bar',
+        data: {
+          labels: categories,
+          datasets: [{
+            label: 'Complaints count',
+            data: catCounts,
+            backgroundColor: 'rgba(59, 130, 246, 0.65)',
+            borderColor: '#3B82F6',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A94A6' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A94A6', stepSize: 1 } }
+          }
+        }
+      });
+
+      // Sentiment distribution count
+      const sentiments = ["Positive", "Neutral", "Negative"];
+      const sentCounts = sentiments.map(sent => auditedResults.filter(r => r.sentiment === sent).length);
+
+      if (sentimentChartInstance) sentimentChartInstance.destroy();
+      const ctxSent = document.getElementById("sentimentChart").getContext("2d");
+      sentimentChartInstance = new Chart(ctxSent, {
+        type: 'doughnut',
+        data: {
+          labels: sentiments,
+          datasets: [{
+            data: sentCounts,
+            backgroundColor: [
+              'rgba(34, 197, 94, 0.7)',
+              'rgba(249, 115, 22, 0.7)',
+              'rgba(239, 68, 68, 0.7)'
+            ],
+            borderColor: '#1A1D24',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { color: '#8A94A6', boxWidth: 12 }
+            }
+          }
+        }
+      });
+    }
+
+    function applyFilters() {
+      const fCat = document.getElementById("filterCategory").value;
+      const fSent = document.getElementById("filterSentiment").value;
+      const fUrg = document.getElementById("filterUrgency").value;
+
+      const filtered = auditedResults.filter(r => {
+        const matchC = !fCat || r.category === fCat;
+        const matchS = !fSent || r.sentiment === fSent;
+        const matchU = !fUrg || r.urgency === fUrg;
+        return matchC && matchS && matchU;
+      });
+
+      const tBody = document.getElementById("auditTableBody");
+      tBody.innerHTML = "";
+
+      filtered.forEach(r => {
+        const sBadge = r.sentiment === "Positive" ? "badge-success" :
+                      r.sentiment === "Negative" ? "badge-error" : "badge-warn";
+        const uBadge = r.urgency === "Urgent" ? "badge-error" : "badge-success";
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td style="color:#fff;">${r.feedback}</td>
+          <td><span class="badge badge-blue">${r.category}</span></td>
+          <td><span class="badge ${sBadge}">${r.sentiment}</span></td>
+          <td><span class="badge ${uBadge}">${r.urgency}</span></td>
+          <td style="font-weight:600; color:var(--green-border);">${r.action_item}</td>
+        `;
+        tBody.appendChild(row);
+      });
+    }
+
+    function exportCSV() {
+      if (auditedResults.length === 0) return;
+      
+      const headers = ["feedback", "category", "sentiment", "urgency", "action_item"];
+      let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+      
+      auditedResults.forEach(r => {
+        const row = [
+          `"${r.feedback.replace(/"/g, '""')}"`,
+          `"${r.category}"`,
+          `"${r.sentiment}"`,
+          `"${r.urgency}"`,
+          `"${r.action_item.replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "audited_college_feedback.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
