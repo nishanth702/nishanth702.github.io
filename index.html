@@ -528,6 +528,9 @@
             <button class="viewport-btn" onclick="setViewport('tablet')" id="vpTablet" title="Tablet View"><i class="fa-solid fa-tablet-screen-button"></i></button>
             <button class="viewport-btn" onclick="setViewport('mobile')" id="vpMobile" title="Mobile View"><i class="fa-solid fa-mobile-screen-button"></i></button>
           </div>
+          <a href="#" id="modalOpenExternal" target="_blank" class="btn btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; align-items: center; gap: 6px; text-decoration: none;" title="Open in new tab">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Live
+          </a>
           <button class="modal-close-btn" onclick="closeSandbox()" title="Close Preview">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -660,13 +663,23 @@
     function openSandbox(type) {
       modalContent.className = 'modal-content';
       viewportControls.style.display = 'none';
+      const openExternalBtn = document.getElementById('modalOpenExternal');
+      openExternalBtn.style.display = 'none';
       
       if (type === 'trigplotter') {
         modalTitle.textContent = "Live Sandbox — TrigPlotter AWS";
         viewportControls.style.display = 'flex';
+        openExternalBtn.href = "https://nishanth702.github.io/TrigPlotter-AWS/";
+        openExternalBtn.style.display = 'inline-flex';
+        
+        // Show loading spinner first
         modalContent.innerHTML = `
-          <div class="modal-iframe-wrapper desktop" id="iframeWrapper">
-            <iframe src="https://nishanth702.github.io/TrigPlotter-AWS/" title="TrigPlotter Live Frame"></iframe>
+          <div class="modal-loading-indicator" id="modalLoader" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--text-secondary); font-family: var(--font-sans); gap: 15px; margin: auto;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent);"></i>
+            <span>Loading live interactive preview...</span>
+          </div>
+          <div class="modal-iframe-wrapper desktop" id="iframeWrapper" style="display: none; width: 100%; height: 100%;">
+            <iframe src="https://nishanth702.github.io/TrigPlotter-AWS/" title="TrigPlotter Live Frame" onload="document.getElementById('modalLoader').style.display='none'; document.getElementById('iframeWrapper').style.display='block';"></iframe>
           </div>
         `;
       } else {
@@ -674,7 +687,7 @@
         modalContent.classList.add('dark-bg');
         const proj = projectFiles[type];
         activeExplorerProject = type;
-        modalTitle.textContent = \`Code Explorer — \${proj.title}\`;
+        modalTitle.textContent = `Code Explorer — ${proj.title}`;
         
         let sidebarItems = '';
         let firstFile = '';
@@ -686,7 +699,7 @@
           
           sidebarItems += `
             <li class="file-tree-item file ${idx === 0 ? 'active' : ''}" onclick="selectExplorerFile(this, '${filename}')">
-              <i class="${icon}"></i> \${filename}
+              <i class="${icon}"></i> ${filename}
             </li>
           `;
         });
@@ -696,13 +709,13 @@
             <aside class="explorer-sidebar">
               <div class="sidebar-title">Workspace files</div>
               <ul class="file-tree-list">
-                \${sidebarItems}
+                ${sidebarItems}
               </ul>
             </aside>
             <section class="code-viewer-panel">
               <div class="code-viewer-header">
                 <div class="active-tab-title" id="activeCodeTab">
-                  <i class="fa-solid fa-code"></i> \${firstFile}
+                  <i class="fa-solid fa-code"></i> ${firstFile}
                 </div>
               </div>
               <pre class="code-view-container"><code id="codeViewArea"></code></pre>
@@ -722,6 +735,7 @@
       modal.classList.remove('open');
       modalContent.innerHTML = '';
       document.body.style.overflow = '';
+      document.getElementById('modalOpenExternal').style.display = 'none';
     }
 
     // Close on overlay click

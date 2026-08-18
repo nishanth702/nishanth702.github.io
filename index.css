@@ -995,10 +995,12 @@ footer p {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   transition: var(--transition);
   margin: 0 auto;
+  flex: 1 1 auto;
 }
 
 /* Viewport Mock Dimensions */
@@ -1009,24 +1011,30 @@ footer p {
 
 .modal-iframe-wrapper.tablet {
   width: 768px;
-  height: 95%;
+  max-width: 100%;
+  height: 90%;
   border: 12px solid #1e293b;
   border-radius: 24px;
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
 .modal-iframe-wrapper.mobile {
   width: 375px;
+  max-width: 100%;
   height: 85%;
   border: 12px solid #1e293b;
   border-radius: 36px;
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
-.modal-content iframe {
+.modal-iframe-wrapper iframe {
   width: 100%;
   height: 100%;
   border: none;
+  display: block;
+  background: #ffffff;
 }
 
 /* Code Explorer Layout */
