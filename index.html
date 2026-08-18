@@ -1949,65 +1949,18 @@ footer p {
     };
 
     function openSandbox(type) {
+      if (type === 'trigplotter') {
+        window.open("https://nishanth702.github.io/TrigPlotter-AWS/", "_blank");
+        return;
+      }
+      
       modalContent.className = 'modal-content';
       viewportControls.style.display = 'none';
       const openExternalBtn = document.getElementById('modalOpenExternal');
       openExternalBtn.style.display = 'none';
       
-      if (type === 'trigplotter') {
-        console.log("openSandbox triggered for type: trigplotter");
-        modalTitle.textContent = "Live Sandbox — TrigPlotter AWS";
-        viewportControls.style.display = 'flex';
-        openExternalBtn.href = "https://nishanth702.github.io/TrigPlotter-AWS/";
-        openExternalBtn.style.display = 'inline-flex';
-        
-        modalContent.innerHTML = `
-          <div class="modal-loading-indicator" id="modalLoader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font-sans); gap: 15px; z-index: 10; padding: 20px; text-align: center;">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent);"></i>
-            <span id="modalLoaderText">Loading live interactive preview...</span>
-          </div>
-          <div class="modal-iframe-wrapper desktop" id="iframeWrapper"></div>
-        `;
-        
-        // Dynamically create iframe to resolve load race conditions (especially on cached loads)
-        const wrapper = document.getElementById('iframeWrapper');
-        const iframe = document.createElement('iframe');
-        iframe.id = 'sandboxIframe';
-        iframe.title = 'TrigPlotter Live Frame';
-        
-        let loaded = false;
-        iframe.addEventListener('load', () => {
-          loaded = true;
-          console.log("TrigPlotter iframe loaded successfully.");
-          const loader = document.getElementById('modalLoader');
-          if (loader) loader.style.display = 'none';
-        });
-        
-        // Timeout fallback after 4 seconds (runs if loading is blocked, fails, or takes too long)
-        setTimeout(() => {
-          if (!loaded) {
-            console.warn("Iframe load event did not trigger. Activating fallback interface.");
-            const loader = document.getElementById('modalLoader');
-            if (loader) {
-              loader.innerHTML = `
-                <i class="fa-solid fa-circle-exclamation" style="font-size: 3rem; color: #f59e0b; margin-bottom: 10px;"></i>
-                <h3 style="color: var(--text-primary); margin-bottom: 8px;">Preview Blocked or Slow</h3>
-                <p style="max-width: 400px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-secondary);">
-                  Your browser's security settings or strict tracking protection blocked the embed. You can open the project directly in a new tab!
-                </p>
-                <a href="https://nishanth702.github.io/TrigPlotter-AWS/" target="_blank" class="btn btn-primary" style="text-decoration: none;">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Live Project
-                </a>
-              `;
-            }
-          }
-        }, 4000);
-        
-        iframe.src = "https://nishanth702.github.io/TrigPlotter-AWS/";
-        wrapper.appendChild(iframe);
-      } else {
-        // File explorer sandbox
-        modalContent.classList.add('dark-bg');
+      // File explorer sandbox
+      modalContent.classList.add('dark-bg');
         const proj = projectFiles[type];
         activeExplorerProject = type;
         modalTitle.textContent = `Code Explorer — ${proj.title}`;
