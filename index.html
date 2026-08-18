@@ -1526,9 +1526,9 @@ footer p {
               <a href="https://github.com/nishanth702/Mini-project" target="_blank" class="btn btn-secondary">
                 <i class="fa-brands fa-github"></i> Source
               </a>
-              <button onclick="openSandbox('farm2market')" class="btn btn-primary">
-                <i class="fa-solid fa-code-compare"></i> Explore Code
-              </button>
+              <a href="https://nishanth702.github.io/farm2market-flask/" target="_blank" class="btn btn-primary" style="text-decoration: none;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> View Live
+              </a>
             </div>
           </div>
 
@@ -1935,15 +1935,6 @@ footer p {
           "README.md": `# College Feedback Classifier\nAn AI-powered natural language processing application built to classify unstructured college feedback into structured sentiment categories.\n\n### Core Technologies\n- Python 3.10\n- Hugging Face Transformers\n- FLAN-T5 (Large model for few-shot prompt classification)\n- Gradio UI`,
           "main.py": `import gradio as gr\nfrom nlp_pipeline import FeedbackClassifier\n\n# Initialize local NLP Classifier model\nclassifier = FeedbackClassifier()\n\ndef process_feedback(text):\n    category, confidence = classifier.predict(text)\n    sentiment = classifier.analyze_sentiment(text)\n    return {\n        "Category": category,\n        "Confidence": f"{confidence * 100:.1f}%",\n        "Sentiment": sentiment\n    }\n\n# Build Gradio Web Interface\ninterface = gr.Interface(\n    fn=process_feedback,\n    inputs=gr.Textbox(lines=4, placeholder="Enter college student feedback here..."),\n    outputs=gr.JSON(label="Structured Insights"),\n    title="VIT Feedback Sentiment Classifier",\n    description="NLP-powered prompt engineering classification using FLAN-T5."\n)\n\nif __name__ == "__main__":\n    interface.launch(share=False)`,
           "nlp_pipeline.py": `import torch\nfrom transformers import AutoTokenizer, AutoModelForSeq2SeqLM\n\nclass FeedbackClassifier:\n    def __init__(self):\n        self.model_name = "google/flan-t5-base"\n        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)\n        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)\n        \n    def predict(self, text):\n        # Structured few-shot prompt formulation\n        prompt = (\n            "Classify this college student feedback into one of these categories: "\n            "[Academics, Infrastructure, Faculty, Placements, Extra-Curriculars].\\n\\n"\n            f"Feedback: '{text}'\\n"\n            "Category: "\n        )\n        inputs = self.tokenizer(prompt, return_tensors="pt")\n        outputs = self.model.generate(**inputs, max_length=16)\n        category = self.tokenizer.decode(outputs[0], skip_special_tokens=True)\n        return category, 0.94\n        \n    def analyze_sentiment(self, text):\n        # Simple rule-based validation wrapper\n        keywords = ['good', 'excellent', 'great', 'love', 'clean']\n        if any(w in text.lower() for w in keywords):\n            return "Positive"\n        return "Neutral / Suggestion"`
-        }
-      },
-      farm2market: {
-        title: "Farm2Market Commerce Interface",
-        files: {
-          "README.md": `# Farm2Market\nResponsive front-end mini-project engineered to facilitate direct commerce between farmers and consumer networks.\n\n### Key Deliverables\n- Fully responsive grid design\n- Custom HSL styling variables\n- JavaScript catalog controllers`,
-          "index.html": `<!DOCTYPE html>\n<html>\n<head>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <nav class="navbar">\n    <div class="logo">Farm2Market</div>\n    <div class="cart-icon" onclick="toggleCart()">🛒 <span id="cartCount">0</span></div>\n  </nav>\n  \n  <div class="catalog-grid" id="catalog"></div>\n  \n  <script src="app.js"></script>\n</body>\n</html>`,
-          "styles.css": `body {\n  font-family: system-ui, sans-serif;\n  background: #fdfbf7;\n}\n.catalog-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));\n  gap: 20px;\n  padding: 40px;\n}\n.product-card {\n  background: white;\n  border: 1px solid #e7e5e4;\n  border-radius: 8px;\n  padding: 16px;\n  transition: box-shadow 0.2s;\n}\n.product-card:hover {\n  box-shadow: 0 4px 12px rgba(0,0,0,0.05);\n}`,
-          "app.js": `const products = [\n  { id: 1, name: "Fresh Organic Tomatoes", price: "Rs. 40/kg" },\n  { id: 2, name: "Premium Basmati Rice", price: "Rs. 85/kg" }\n];\n\nlet cart = [];\n\nfunction renderCatalog() {\n  const catalog = document.getElementById('catalog');\n  catalog.innerHTML = products.map(p => \`\n    <div class="product-card">\n      <h3>\${p.name}</h3>\n      <p>\${p.price}</p>\n      <button onclick="addToCart(\${p.id})">Add to Cart</button>\n    </div>\n  \`).join('');\n}`
         }
       }
     };
