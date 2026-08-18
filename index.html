@@ -677,17 +677,22 @@
             <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent);"></i>
             <span>Loading live interactive preview...</span>
           </div>
-          <div class="modal-iframe-wrapper desktop" id="iframeWrapper">
-            <iframe id="sandboxIframe" src="https://nishanth702.github.io/TrigPlotter-AWS/" title="TrigPlotter Live Frame"></iframe>
-          </div>
+          <div class="modal-iframe-wrapper desktop" id="iframeWrapper"></div>
         `;
         
-        // Hide loader when iframe finishes loading
-        const iframe = document.getElementById('sandboxIframe');
+        // Dynamically create iframe to resolve load race conditions (especially on cached loads)
+        const wrapper = document.getElementById('iframeWrapper');
+        const iframe = document.createElement('iframe');
+        iframe.id = 'sandboxIframe';
+        iframe.title = 'TrigPlotter Live Frame';
+        
         iframe.addEventListener('load', () => {
           const loader = document.getElementById('modalLoader');
           if (loader) loader.style.display = 'none';
         });
+        
+        iframe.src = "https://nishanth702.github.io/TrigPlotter-AWS/";
+        wrapper.appendChild(iframe);
       } else {
         // File explorer sandbox
         modalContent.classList.add('dark-bg');
